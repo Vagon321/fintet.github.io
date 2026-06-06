@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D LAB — Студия 3D-печати</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0B0F19;
+  --surface: #111827;
+  --card: #1A2332;
+  --border: rgba(0,201,255,.12);
+  --text: #fff;
+  --text2: #94A3B8;
+  --glow: 0 0 20px rgba(0,201,255,.3), 0 0 40px rgba(146,254,157,.15);
+  --grad: linear-gradient(135deg,#00C9FF,#92FE9D);
+  --grad2: linear-gradient(135deg,rgba(0,201,255,.08),rgba(146,254,157,.06));
+  --font: 'Space Grotesk',sans-serif;
+  --mono: 'Roboto Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;line-height:1.6}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit;border:none;outline:none;background:none}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--grad);border-radius:3px}
+
+/* preloader */
+#preloader{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;transition:opacity .5s,visibility .5s}
+#preloader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.spinner{width:60px;height:60px;border:3px solid rgba(0,201,255,.1);border-top-color:#00C9FF;border-radius:50%;animation:spin .8s linear infinite}
+.pl-logo{font-family:var(--font);font-weight:700;font-size:1.5rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* particles canvas */
+#particles-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* containers */
+.container{max-width:1200px;margin:0 auto;padding:0 1rem;position:relative;z-index:1}
+
+/* btn */
+.btn{display:inline-flex;align-items:center;gap:.6rem;padding:.85rem 2rem;border-radius:50px;font-family:var(--font);font-weight:600;font-size:.95rem;cursor:pointer;transition:.3s;position:relative;overflow:hidden}
+.btn-primary{background:var(--grad);color:#0B0F19;border:none}
+.btn-primary:hover{box-shadow:var(--glow);transform:translateY(-2px)}
+.btn-outline{border:1.5px solid rgba(0,201,255,.4);color:#fff;background:transparent}
+.btn-outline:hover{border-color:#00C9FF;box-shadow:0 0 25px rgba(0,201,255,.25);transform:translateY(-2px)}
+
+/* section */
+.section{padding:5rem 0;position:relative;z-index:1}
+.section-title{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;margin-bottom:.75rem}
+.section-sub{font-family:var(--mono);color:var(--text2);font-size:.9rem;margin-bottom:3rem;max-width:600px}
+
+/* header */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;padding:.8rem 0;background:rgba(11,15,25,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);transition:.3s}
+.header .container{display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:700;font-size:1.35rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav{display:flex;gap:1.75rem;align-items:center}
+.nav a{font-family:var(--mono);font-size:.8rem;color:var(--text2);transition:.3s;position:relative}
+.nav a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:var(--grad);transition:.3s}
+.nav a:hover{color:#fff}
+.nav a:hover::after{width:100%}
+.nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.nav-toggle span{width:24px;height:2px;background:#fff;border-radius:2px;transition:.3s}
+
+/* hero */
+.hero{min-height:100vh;display:flex;align-items:center;padding-top:80px;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-3d{position:absolute;right:-5%;top:50%;transform:translateY(-50%);width:500px;height:500px;z-index:0;opacity:.3}
+.hero-3d-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:rotate3d 12s linear infinite}
+@keyframes rotate3d{0%{transform:rotateY(0deg)}100%{transform:rotateY(360deg)}}
+.hero-3d-item{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;backface-visibility:hidden}
+.hero-3d-item svg{width:280px;height:280px;filter:drop-shadow(0 0 30px rgba(0,201,255,.15))}
+.hero-3d-item:nth-child(2){transform:rotateY(120deg)}
+.hero-3d-item:nth-child(3){transform:rotateY(240deg)}
+.hero-content{position:relative;z-index:2;max-width:720px}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:50px;border:1px solid var(--border);font-family:var(--mono);font-size:.75rem;color:var(--text2);margin-bottom:1.5rem;background:rgba(0,201,255,.05)}
+.hero h1{font-size:clamp(2rem,5vw,3.8rem);font-weight:700;line-height:1.15;margin-bottom:1.25rem}
+.hero h1 span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-family:var(--mono);font-size:clamp(.9rem,1.2vw,1.1rem);color:var(--text2);margin-bottom:2rem;max-width:540px}
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap}
+
+/* tech grid */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem}
+.tech-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;transition:.3s;position:relative;overflow:hidden}
+.tech-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad);opacity:0;transition:.3s}
+.tech-card:hover{transform:translateY(-4px);border-color:rgba(0,201,255,.3)}
+.tech-card:hover::before{opacity:1}
+.tech-icon{width:52px;height:52px;border-radius:12px;background:var(--grad2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;font-size:1.5rem}
+.tech-card h3{font-size:1.15rem;margin-bottom:.5rem}
+.tech-card p{font-family:var(--mono);font-size:.8rem;color:var(--text2);line-height:1.5}
+.tech-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.8rem}
+.tech-tags span{font-family:var(--mono);font-size:.65rem;padding:.2rem .6rem;border-radius:50px;background:rgba(0,201,255,.08);border:1px solid rgba(0,201,255,.12);color:rgba(0,201,255,.8)}
+
+/* calculator */
+.calc-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem}
+.calc-sliders{display:flex;flex-direction:column;gap:1.5rem}
+.calc-group label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.8rem;color:var(--text2);margin-bottom:.5rem}
+.calc-group label span{color:var(--text)}
+.calc-group input[type="range"]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;transition:.2s}
+.calc-group input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--grad);cursor:pointer;box-shadow:0 0 15px rgba(0,201,255,.3)}
+.calc-group select{width:100%;padding:.75rem 1rem;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.85rem;cursor:pointer}
+.calc-result{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;background:var(--grad2);border-radius:16px;border:1px solid var(--border)}
+.calc-result .price{font-size:3.5rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.calc-result .price-label{font-family:var(--mono);font-size:.8rem;color:var(--text2);margin-top:.5rem}
+.calc-result .price-note{font-family:var(--mono);font-size:.7rem;color:var(--text2);margin-top:1rem}
+.calc-result .btn{margin-top:1.5rem}
+
+/* portfolio */
+.port-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+.port-card{perspective:1200px;height:320px}
+.port-card-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.23,1,.32,1);transform-style:preserve-3d}
+.port-card:hover .port-card-inner{transform:rotateY(10deg) rotateX(5deg)}
+.port-card-front,.port-card-back{position:absolute;inset:0;border-radius:16px;backface-visibility:hidden;overflow:hidden}
+.port-card-front{background:var(--card);border:1px solid var(--border);display:flex;flex-direction:column}
+.port-img{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:180px}
+.port-img svg{width:100%;height:100%;object-fit:cover}
+.port-info{padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);font-family:var(--mono);font-size:.75rem}
+.port-info .p-time{color:var(--text2)}
+.port-info .p-price{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600}
+.port-card-back{background:var(--card);border:1px solid var(--border);transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;font-size:.85rem;color:var(--text2);font-family:var(--mono);line-height:1.6}
+
+/* how we work */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin-bottom:2.5rem}
+.step{text-align:center;position:relative;padding:2rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:16px;transition:.3s}
+.step:hover{transform:translateY(-4px);border-color:rgba(0,201,255,.3)}
+.step-num{width:44px;height:44px;border-radius:50%;background:var(--grad);color:#0B0F19;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+.step h4{font-size:1rem;margin-bottom:.4rem}
+.step p{font-family:var(--mono);font-size:.78rem;color:var(--text2)}
+.progress-wrap{background:var(--card);border:1px solid var(--border);border-radius:50px;padding:.5rem 1.5rem;display:flex;align-items:center;gap:1rem;max-width:500px;margin:0 auto}
+.progress-bar{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:var(--grad);border-radius:3px;transition:width 1.5s ease}
+.progress-label{font-family:var(--mono);font-size:.7rem;color:var(--text2);white-space:nowrap}
+
+/* testimonials */
+.test-carousel{position:relative;overflow:hidden}
+.test-track{display:flex;transition:transform .5s ease}
+.test-card{min-width:100%;padding:2rem;background:var(--card);border:1px solid var(--border);border-radius:16px;display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start}
+.test-avatar{width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--grad)}
+.test-avatar svg{width:100%;height:100%}
+.test-body h4{font-size:1rem;margin-bottom:.2rem}
+.test-body .test-role{font-family:var(--mono);font-size:.72rem;color:var(--text2);margin-bottom:.75rem}
+.test-body p{font-family:var(--mono);font-size:.82rem;color:var(--text2);line-height:1.6}
+.test-photo{margin-top:1rem;border-radius:10px;overflow:hidden;max-width:200px;border:1px solid var(--border)}
+.test-dots{display:flex;justify-content:center;gap:.5rem;margin-top:1.5rem}
+.test-dots button{width:10px;height:10px;border-radius:50%;background:var(--border);cursor:pointer;transition:.3s;border:none}
+.test-dots button.active{background:var(--grad);width:28px;border-radius:5px}
+
+/* form */
+.form-wrap{max-width:600px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem}
+.form-grid{display:flex;flex-direction:column;gap:1.25rem}
+.form-grid input,.form-grid select{padding:.85rem 1.2rem;border-radius:12px;background:var(--surface);border:1px solid var(--border);font-family:var(--mono);font-size:.85rem;color:var(--text);transition:.3s;width:100%}
+.form-grid input:focus,.form-grid select:focus{border-color:rgba(0,201,255,.4);box-shadow:0 0 15px rgba(0,201,255,.08)}
+.form-grid select option{background:var(--surface);color:var(--text)}
+.form-check{display:flex;align-items:flex-start;gap:.6rem;font-family:var(--mono);font-size:.75rem;color:var(--text2)}
+.form-check input[type="checkbox"]{width:18px;height:18px;accent-color:#00C9FF;flex-shrink:0;margin-top:2px}
+.form-promo{padding:1rem;border-radius:12px;background:var(--grad2);border:1px solid var(--border);font-family:var(--mono);font-size:.78rem;color:var(--text2);margin-top:.5rem;display:flex;align-items:center;gap:.6rem}
+
+/* faq */
+.faq-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:.75rem}
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.faq-q{padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:600;font-size:.95rem;transition:.3s;user-select:none}
+.faq-q:hover{color:#00C9FF}
+.faq-q .icon{font-size:1.2rem;transition:.3s}
+.faq-item.open .faq-q .icon{transform:rotate(45deg)}
+.faq-a{padding:0 1.5rem;max-height:0;overflow:hidden;transition:.4s ease}
+.faq-item.open .faq-a{padding-bottom:1.25rem;max-height:200px}
+.faq-a p{font-family:var(--mono);font-size:.82rem;color:var(--text2);line-height:1.6}
+
+/* footer */
+.footer{border-top:1px solid var(--border);padding:3rem 0;margin-top:2rem;font-family:var(--mono);font-size:.8rem}
+.footer .container{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem}
+.footer h4{font-family:var(--font);font-weight:600;font-size:.95rem;margin-bottom:1rem;color:#fff}
+.footer a{display:block;color:var(--text2);margin-bottom:.5rem;transition:.3s}
+.footer a:hover{color:#00C9FF}
+.footer-socials{display:flex;gap:.75rem;margin-top:.5rem}
+.footer-socials a{width:42px;height:42px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:.3s;margin-bottom:0}
+.footer-socials a:hover{background:var(--grad);border-color:transparent}
+.footer-socials a:hover svg path{fill:#0B0F19}
+.footer-bottom{margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;color:var(--text2);font-size:.72rem}
+.counter{display:flex;align-items:center;gap:.5rem;font-family:var(--mono);color:var(--text2)}
+.counter-num{font-weight:700;font-size:1.1rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.counter-dot{width:8px;height:8px;border-radius:50%;background:#00C9FF;animation:pulse-dot 1.5s ease infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.active{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;max-width:500px;width:100%;padding:2.5rem;position:relative;animation:modalIn .3s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:.3s}
+.modal-close:hover{background:rgba(255,0,0,.15);border-color:rgba(255,0,0,.3);color:#ff4444}
+.modal h3{font-size:1.5rem;margin-bottom:.5rem}
+.modal p{font-family:var(--mono);font-size:.82rem;color:var(--text2);margin-bottom:1.5rem}
+.drop-zone{border:2px dashed var(--border);border-radius:16px;padding:3rem 2rem;text-align:center;transition:.3s;cursor:pointer}
+.drop-zone:hover,.drop-zone.dragover{border-color:#00C9FF;background:rgba(0,201,255,.05)}
+.drop-zone-icon{font-size:2.5rem;margin-bottom:.75rem;opacity:.5}
+.drop-zone p{font-family:var(--mono);font-size:.8rem;color:var(--text2);margin-bottom:0}
+.drop-zone .dz-hint{font-size:.7rem;margin-top:.5rem;color:var(--text2);opacity:.6}
+
+/* mobile nav */
+@media(max-width:768px){
+  .nav{position:fixed;top:0;right:-100%;width:280px;height:100vh;background:var(--surface);flex-direction:column;padding:5rem 2rem 2rem;gap:1.25rem;transition:.4s ease;border-left:1px solid var(--border);z-index:99}
+  .nav.open{right:0}
+  .nav a{font-size:.9rem;width:100%}
+  .nav-toggle{display:flex}
+  .nav-toggle.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+  .nav-toggle.open span:nth-child(2){opacity:0}
+  .nav-toggle.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+  .hero-3d{display:none}
+  .calc-wrap{grid-template-columns:1fr}
+  .test-card{grid-template-columns:1fr}
+  .footer .container{grid-template-columns:1fr 1fr}
+  .step-num{width:38px;height:38px;font-size:.95rem}
+  .section{padding:3rem 0}
+  .modal{padding:1.5rem}
+}
+@media(max-width:480px){
+  .hero-actions{flex-direction:column}
+  .hero-actions .btn{width:100%;justify-content:center}
+  .port-grid{grid-template-columns:1fr}
+  .footer .container{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;text-align:center}
+}
+
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* noise overlay */
+.noise{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")}
+</style>
+</head>
+<body>
+
+<div id="preloader">
+  <div class="spinner"></div>
+  <div class="pl-logo">3D LAB</div>
+</div>
+
+<div class="noise"></div>
+<canvas id="particles-canvas"></canvas>
+
+<header class="header" id="header">
+  <div class="container">
+    <a href="#" class="logo">3D LAB</a>
+    <nav class="nav" id="nav">
+      <a href="#tech">Технологии</a>
+      <a href="#calc">Калькулятор</a>
+      <a href="#portfolio">Работы</a>
+      <a href="#faq">FAQ</a>
+      <a href="#order" class="btn btn-primary" style="padding:.6rem 1.5rem;font-size:.8rem">Свяжитесь с нами</a>
+    </nav>
+    <div class="nav-toggle" id="navToggle"><span></span><span></span><span></span></div>
+  </div>
+</header>
+
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-3d" aria-hidden="true">
+    <div class="hero-3d-inner">
+      <div class="hero-3d-item"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="60" fill="none" stroke="url(#g1)" stroke-width="3"/><circle cx="100" cy="100" r="40" fill="none" stroke="url(#g1)" stroke-width="2" stroke-dasharray="6 4"/><circle cx="100" cy="100" r="15" fill="url(#g1)"/><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C9FF"/><stop offset="100%" stop-color="#92FE9D"/></linearGradient></defs></svg></div>
+      <div class="hero-3d-item"><svg viewBox="0 0 200 200"><path d="M70 160 L70 100 Q70 70 100 70 Q130 70 130 100 L130 160 Z" fill="none" stroke="url(#g2)" stroke-width="3"/><ellipse cx="100" cy="70" rx="35" ry="8" fill="none" stroke="url(#g2)" stroke-width="2"/><defs><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C9FF"/><stop offset="100%" stop-color="#92FE9D"/></linearGradient></defs></svg></div>
+      <div class="hero-3d-item"><svg viewBox="0 0 200 200"><rect x="60" y="80" width="80" height="60" rx="8" fill="none" stroke="url(#g3)" stroke-width="3"/><rect x="75" y="55" width="50" height="30" rx="4" fill="none" stroke="url(#g3)" stroke-width="2"/><circle cx="100" cy="140" r="25" fill="none" stroke="url(#g3)" stroke-width="2"/><defs><linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C9FF"/><stop offset="100%" stop-color="#92FE9D"/></linearGradient></defs></svg></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge"><span>⚡</span> Работаем с 2020 года</div>
+      <h1>Печатаем <span>любые формы</span>. PLA, PETG, нейлон, фотополимеры</h1>
+      <p>Промышленная 3D-печать, прототипирование, мелкосерийное производство, архитектурные макеты, стоматология, сувениры</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openModal()">Загрузить 3D-модель →</button>
+        <a href="#portfolio" class="btn btn-outline">Смотреть работы</a>
+      </div>
+      <p style="margin-top:1.5rem;font-size:.85rem;font-family:var(--mono);color:var(--text2)">от 500₽ за деталь · Бесплатная консультация</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tech">
+  <div class="container">
+    <h2 class="section-title reveal">Технологии и материалы</h2>
+    <p class="section-sub reveal">4 технологии, десятки материалов — подберём оптимальный метод под вашу задачу</p>
+    <div class="tech-grid">
+      <div class="tech-card reveal">
+        <div class="tech-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#tg1)" stroke-width="1.5"><defs><linearGradient id="tg1" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#00C9FF"/><stop offset="1" stop-color="#92FE9D"/></linearGradient></defs><path d="M8 3h8l2 4-4 8-4-8 2-4z"/><path d="M6 19h12"/><path d="M8 21h8"/><path d="M10 7l2 4 2-4"/></svg>
+        </div>
+        <h3>FDM / FFF</h3>
+        <p>Послойное наплавление пластиковой нити. Доступная технология для функциональных деталей и прототипов.</p>
+        <div class="tech-tags"><span>Точность ±0.2мм</span><span>PLA, PETG, ABS, TPU</span><span>До 300×300×400мм</span></div>
+      </div>
+      <div class="tech-card reveal">
+        <div class="tech-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#tg2)" stroke-width="1.5"><defs><linearGradient id="tg2" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#00C9FF"/><stop offset="1" stop-color="#92FE9D"/></linearGradient></defs><circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/></svg>
+        </div>
+        <h3>SLA / DLP</h3>
+        <p>Фотополимерная печать с отверждением жидкой смолы лазером/проектором. Идеальная детализация.</p>
+        <div class="tech-tags"><span>Точность ±0.05мм</span><span>Фотополимеры</span><span>Ювелирка, стоматология</span></div>
+      </div>
+      <div class="tech-card reveal">
+        <div class="tech-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#tg3)" stroke-width="1.5"><defs><linearGradient id="tg3" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#00C9FF"/><stop offset="1" stop-color="#92FE9D"/></linearGradient></defs><path d="M12 2L2 7v10l10 5 10-5V7l-10-5z"/><path d="M2 7l10 5 10-5"/><path d="M12 22V12"/></svg>
+        </div>
+        <h3>SLS</h3>
+        <p>Селективное лазерное спекание нейлонового порошка. Без поддержек, прочные детали со сложной геометрией.</p>
+        <div class="tech-tags"><span>Точность ±0.1мм</span><span>PA12, PA11, TPU</span><span>Функциональные детали</span></div>
+      </div>
+      <div class="tech-card reveal">
+        <div class="tech-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#tg4)" stroke-width="1.5"><defs><linearGradient id="tg4" x1="0" y1="0" x2="24" y2="24"><stop offset="0" stop-color="#00C9FF"/><stop offset="1" stop-color="#92FE9D"/></linearGradient></defs><path d="M12 22c1 0 5-3 5-8s-2-8-5-8-5 3-5 8 4 8 5 8z"/><path d="M12 6V2"/><path d="M8 4l4 2 4-2"/></svg>
+        </div>
+        <h3>Печать металлом</h3>
+        <p>Прямое лазерное сплавление металлического порошка (DMLS). Аэрокосмос, медицина, инструмент.</p>
+        <div class="tech-tags"><span>Точность ±0.05мм</span><span>Ti, Al, SS, CoCr</span><span>Серийное производство</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="calc">
+  <div class="container">
+    <h2 class="section-title reveal">Калькулятор стоимости</h2>
+    <p class="section-sub reveal">Рассчитайте примерную стоимость печати вашей модели за пару кликов</p>
+    <div class="calc-wrap reveal">
+      <div class="calc-sliders">
+        <div class="calc-group">
+          <label>Высота (см) <span id="hVal">10</span></label>
+          <input type="range" id="height" min="1" max="50" value="10" step="1">
+        </div>
+        <div class="calc-group">
+          <label>Ширина (см) <span id="wVal">8</span></label>
+          <input type="range" id="width" min="1" max="50" value="8" step="1">
+        </div>
+        <div class="calc-group">
+          <label>Сложность</label>
+          <select id="complexity">
+            <option value="1">Простая (базовая геометрия)</option>
+            <option value="2" selected>Средняя (средняя детализация)</option>
+            <option value="3">Сложная (высокая детализация)</option>
+          </select>
+        </div>
+        <div class="calc-group">
+          <label>Материал</label>
+          <select id="material">
+            <option value="1">PLA — от 500₽</option>
+            <option value="1.5">PETG — от 700₽</option>
+            <option value="2.5" selected>Фотополимер — от 1200₽</option>
+            <option value="3.5">Нейлон (SLS) — от 2000₽</option>
+            <option value="6">Металл — от 5000₽</option>
+          </select>
+        </div>
+      </div>
+      <div class="calc-result">
+        <div class="price" id="calcPrice">~1 920 ₽</div>
+        <div class="price-label">Примерная стоимость</div>
+        <div class="price-note">* Точная цена рассчитывается после анализа модели</div>
+        <button class="btn btn-primary" onclick="openModal()">Загрузить модель →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="portfolio">
+  <div class="container">
+    <h2 class="section-title reveal">Примеры работ</h2>
+    <p class="section-sub reveal">От функциональных деталей до дизайнерских объектов — более 5000 напечатанных моделей</p>
+    <div class="port-grid">
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf1)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Шестерёнка</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Функциональная деталь</text><defs><linearGradient id="pf1" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#0F1B2E"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 4ч 30м</span><span class="p-price">1 200₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Зубчатая передача для промышленного оборудования. PLA, PETG. Высокая точность посадки.</p></div>
+        </div>
+      </div>
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf2)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Фигурка дракона</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Коллекционная модель</text><defs><linearGradient id="pf2" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#2A1A3E"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 12ч</span><span class="p-price">3 500₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Детализированная фигурка дракона. Фотополимерная печать, высота 15см, постобработка.</p></div>
+        </div>
+      </div>
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf3)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Прототип корпуса</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Инженерный прототип</text><defs><linearGradient id="pf3" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#1B2E1A"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 8ч</span><span class="p-price">2 800₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Прототип корпуса электронного устройства. Проверка эргономики и компоновки.</p></div>
+        </div>
+      </div>
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf4)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Архитектурный макет</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Макет здания</text><defs><linearGradient id="pf4" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#2E1A1A"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 6ч</span><span class="p-price">2 100₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Архитектурный макет жилого комплекса. Детализация фасадов, 30×40см.</p></div>
+        </div>
+      </div>
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf5)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Хирургический шаблон</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Медицинская модель</text><defs><linearGradient id="pf5" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#1A2E2E"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 2ч</span><span class="p-price">5 000₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Стоматологический хирургический шаблон. Медицинский фотополимер, стерилизация.</p></div>
+        </div>
+      </div>
+      <div class="port-card reveal">
+        <div class="port-card-inner">
+          <div class="port-card-front">
+            <div class="port-img"><svg viewBox="0 0 400 300"><rect width="400" height="300" fill="url(#pf6)"/><text x="200" y="145" text-anchor="middle" fill="rgba(255,255,255,.7)" font-family="monospace" font-size="18">Дизайнерская ваза</text><text x="200" y="170" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="monospace" font-size="11">Интерьерный объект</text><defs><linearGradient id="pf6" x1="0" y1="0" x2="400" y2="300"><stop offset="0" stop-color="#1A2332"/><stop offset="1" stop-color="#2E1A2E"/></linearGradient></defs></svg></div>
+            <div class="port-info"><span class="p-time">⏱ 7ч</span><span class="p-price">1 800₽</span></div>
+          </div>
+          <div class="port-card-back"><p>Дизайнерская ваза по авторскому 3D-сканированию. PLA, высота 25см.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="container">
+    <h2 class="section-title reveal">Как мы работаем</h2>
+    <p class="section-sub reveal">4 простых шага от вашей идеи до готовой детали</p>
+    <div class="steps">
+      <div class="step reveal"><div class="step-num">1</div><h4>Пришлите 3D-модель</h4><p>Загрузите STL/OBJ/3MF через форму на сайте или отправьте в Telegram</p></div>
+      <div class="step reveal"><div class="step-num">2</div><h4>Рассчитаем стоимость</h4><p>Проанализируем геометрию, подберём технологию и материал, подготовим смету</p></div>
+      <div class="step reveal"><div class="step-num">3</div><h4>Напечатаем</h4><p>Запустим в печать на промышленных принтерах. Контроль качества на каждом этапе</p></div>
+      <div class="step reveal"><div class="step-num">4</div><h4>Отправим / Заберёте</h4><p>Доставим по РФ или заберёте самовывозом из офиса. Постобработка включена</p></div>
+    </div>
+    <div class="progress-wrap reveal">
+      <span class="progress-label">Готовность заказа:</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="progress-label" id="progressLabel">0%</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="testimonials">
+  <div class="container">
+    <h2 class="section-title reveal">Отзывы клиентов</h2>
+    <p class="section-sub reveal">Нам доверяют стартапы, стоматологии, дизайнеры и промышленные компании</p>
+    <div class="test-carousel reveal">
+      <div class="test-track" id="testTrack">
+        <div class="test-card">
+          <div class="test-avatar"><svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="28" fill="#1A2332"/><circle cx="28" cy="22" r="8" fill="#00C9FF" opacity=".4"/><circle cx="28" cy="44" r="12" fill="#00C9FF" opacity=".3"/></svg></div>
+          <div class="test-body">
+            <h4>Алексей Петров</h4>
+            <div class="test-role">CEO, TechStart</div>
+            <p>«Печатаем прототипы корпусов для IoT-устройств. Отличное качество, быстрые сроки — 3 дня от модели до готовой партии. Перешли на 3D LAB как на основного подрядчика»</p>
+            <div class="test-photo"><svg viewBox="0 0 200 120"><rect width="200" height="120" fill="#1A2332"/><text x="100" y="65" text-anchor="middle" fill="rgba(255,255,255,.3)" font-family="monospace" font-size="11">Фото детали</text></svg></div>
+          </div>
+        </div>
+        <div class="test-card">
+          <div class="test-avatar"><svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="28" fill="#1A2332"/><circle cx="28" cy="22" r="8" fill="#92FE9D" opacity=".4"/><circle cx="28" cy="44" r="12" fill="#92FE9D" opacity=".3"/></svg></div>
+          <div class="test-body">
+            <h4>Елена Соколова</h4>
+            <div class="test-role">Главный врач, DentaClinic</div>
+            <p>«Хирургические шаблоны и модели челюстей печатаем только здесь. Точность 0.05мм, биосовместимые материалы — строгое соответствие медицинским стандартам»</p>
+            <div class="test-photo"><svg viewBox="0 0 200 120"><rect width="200" height="120" fill="#1A2332"/><text x="100" y="65" text-anchor="middle" fill="rgba(255,255,255,.3)" font-family="monospace" font-size="11">Фото детали</text></svg></div>
+          </div>
+        </div>
+        <div class="test-card">
+          <div class="test-avatar"><svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="28" fill="#1A2332"/><circle cx="28" cy="22" r="8" fill="#00C9FF" opacity=".4"/><circle cx="28" cy="44" r="12" fill="#00C9FF" opacity=".3"/></svg></div>
+          <div class="test-body">
+            <h4>Анна Миронова</h4>
+            <div class="test-role">Дизайнер интерьеров</div>
+            <p>«Заказываю архитектурные макеты и кастомные элементы декора. Детализация потрясающая, постобработка — шлифовка и покраска — на высшем уровне»</p>
+            <div class="test-photo"><svg viewBox="0 0 200 120"><rect width="200" height="120" fill="#1A2332"/><text x="100" y="65" text-anchor="middle" fill="rgba(255,255,255,.3)" font-family="monospace" font-size="11">Фото детали</text></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="test-dots" id="testDots"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="order">
+  <div class="container">
+    <h2 class="section-title reveal">Заказать консультацию</h2>
+    <p class="section-sub reveal">Оставьте заявку — мы поможем подобрать технологию и рассчитаем точную стоимость</p>
+    <div class="form-wrap reveal">
+      <form id="orderForm" onsubmit="handleForm(event)">
+        <div class="form-grid">
+          <input type="text" placeholder="Имя" required>
+          <input type="tel" placeholder="Телефон" required>
+          <select required>
+            <option value="" disabled selected>Что печатаем?</option>
+            <option>Функциональная деталь</option>
+            <option>Прототип</option>
+            <option>Фигурка / сувенир</option>
+            <option>Архитектурный макет</option>
+            <option>Медицинская модель</option>
+            <option>Дизайнерский объект</option>
+            <option>Другое</option>
+          </select>
+          <div class="form-check"><input type="checkbox" required><span>Согласен(на) на обработку персональных данных</span></div>
+          <div class="form-promo"><span>🎯</span> Бесплатный слайсинг модели при заказе от 3 деталей</div>
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Отправить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="container">
+    <h2 class="section-title reveal">Часто задаваемые вопросы</h2>
+    <p class="section-sub reveal">Всё, что нужно знать перед заказом 3D-печати</p>
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Какие форматы файлов принимаете?<span class="icon">+</span></div>
+        <div class="faq-a"><p>Мы принимаем STL, OBJ, 3MF, STEP. Если у вас другая модель — пришлите, конвертируем бесплатно. Рекомендуем экспортировать с настройками по умолчанию.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Скорость печати?<span class="icon">+</span></div>
+        <div class="faq-a"><p>Стандартный срок — от 1 до 5 рабочих дней в зависимости от сложности и размера. Срочная печать за 24 часа с доплатой 50%. Для крупных партий — индивидуальный график.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Делаете ли постобработку?<span class="icon">+</span></div>
+        <div class="faq-a"><p>Да, полный цикл: шлифовка, грунтовка, покраска (аэрограф, любые цвета по RAL), полировка, сборка. Также делаем вакуумную металлизацию и гальванику.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Нужна ли 3D-модель?<span class="icon">+</span></div>
+        <div class="faq-a"><p>Желательно. Если модели нет — мы поможем: 3D-сканирование объектов, reverse engineering, моделирование по ТЗ, чертежам или фотографиям. Работаем с любой стадией проекта.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div>
+      <h4>3D LAB</h4>
+      <p style="color:var(--text2);font-size:.78rem;line-height:1.6">Студия 3D-печати полного цикла. Прототипирование, макеты, серийное производство, стоматология, дизайн.</p>
+      <div class="footer-socials">
+        <a href="#" title="Telegram"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21.7 3.3a1 1 0 0 0-1.13-.3L2.3 10.8a1 1 0 0 0 .1 1.88l5.11 1.7 2.95 5.32a1 1 0 0 0 1.73.03l3.1-5.06 4.7-3.68a1 1 0 0 0-.1-1.69L21.7 3.3z" fill="currentColor"/></svg></a>
+        <a href="#" title="VK"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22 17.3V6.7A3.7 3.7 0 0 0 18.3 3H5.7A3.7 3.7 0 0 0 2 6.7v10.6A3.7 3.7 0 0 0 5.7 21h12.6a3.7 3.7 0 0 0 3.7-3.7zM17 13l-1.5 1.5 1.5 1.5-1 1-1.5-1.5L13 17l-1-1 1.5-1.5L12 13l1-1 1.5 1.5L16 12l1 1zm-5.5-3H9v6H7.5v-6H5v-1.5h6.5V10zm2-1.5H15V10h1.5V8.5H15V7h-1.5v1.5z" fill="currentColor"/></svg></a>
+        <a href="#" title="Thingiverse"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="2.5" fill="currentColor"/><rect x="9" y="10" width="6" height="2" rx="1" fill="currentColor"/><rect x="9" y="14" width="6" height="2" rx="1" fill="currentColor"/><rect x="9" y="18" width="6" height="2" rx="1" fill="currentColor"/></svg></a>
+        <a href="#" title="Printables"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="currentColor"/></svg></a>
+      </div>
+    </div>
+    <div><h4>Контакты</h4><a href="mailto:info@3dlab.ru">info@3dlab.ru</a><a href="tel:+74951234567">+7 (495) 123-45-67</a><a href="#">Москва, ул. Технопарк, д. 15</a><a href="#">Пн–Пт: 10:00 – 20:00</a></div>
+    <div><h4>Услуги</h4><a href="#">FDM печать</a><a href="#">Фотополимерная печать</a><a href="#">SLS печать</a><a href="#">Печать металлом</a><a href="#">3D-сканирование</a><a href="#">Постобработка</a></div>
+    <div><h4>Информация</h4><a href="#">О компании</a><a href="#">Доставка и оплата</a><a href="#">Блог</a><a href="#">Политика конфиденциальности</a></div>
+  </div>
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 3D LAB. Все права защищены.</span>
+      <div class="counter">
+        <span class="counter-dot"></span>
+        <span>Заказов сегодня: <span class="counter-num" id="orderCounter">128</span></span>
+      </div>
+      <span style="display:flex;align-items:center;gap:.4rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="1.5"><path d="M6 9V3h12v6"/><path d="M4 9h16v12H4V9z"/><path d="M9 13h6"/><path d="M9 17h6"/></svg> Сделано в 3D LAB</span>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>Загрузить 3D-модель</h3>
+    <p>Перетащите файл в область ниже или нажмите для выбора. Принимаем STL, OBJ, 3MF, STEP</p>
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">📁</div>
+      <p>Перетащите 3D-модель сюда</p>
+      <div class="dz-hint">или кликните для выбора файла</div>
+    </div>
+    <p style="margin-top:1rem;font-size:.72rem;color:var(--text2);text-align:center">После загрузки мы свяжемся с вами в течение 1 часа</p>
+  </div>
+</div>
+
+<script>
+// preloader
+window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('preloader').classList.add('hidden')},1000)})
+
+// particles
+const canvas=document.getElementById('particles-canvas'),ctx=canvas.getContext('2d');
+let pw=0,ph=0,particles=[];
+function resizeP(){pw=canvas.width=window.innerWidth;ph=canvas.height=window.innerHeight}
+window.addEventListener('resize',resizeP);resizeP();
+const pc=60;
+for(let i=0;i<pc;i++){particles.push({x:Math.random()*pw,y:Math.random()*ph,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+1})}
+function drawP(){ctx.clearRect(0,0,pw,ph)
+  for(let p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>pw)p.vx*=-1;if(p.y<0||p.y>ph)p.vy*=-1
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(0,201,255,'+(.15+p.r*.07)+')';ctx.fill()}
+  for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<150){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(0,201,255,${.06*(1-dist/150)})`;ctx.stroke()}}}
+  requestAnimationFrame(drawP)}
+drawP();
+
+// nav toggle
+document.getElementById('navToggle').addEventListener('click',function(){this.classList.toggle('open');document.getElementById('nav').classList.toggle('open')})
+document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{document.getElementById('nav').classList.remove('open');document.getElementById('navToggle').classList.remove('open')}))
+
+// header scroll
+window.addEventListener('scroll',()=>{document.getElementById('header').style.borderBottomColor=window.scrollY>50?'rgba(0,201,255,.15)':'rgba(0,201,255,.04)'})
+
+// reveal
+const observer=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}})},{threshold:.1})
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el))
+
+// calc
+const hS=document.getElementById('height'),wS=document.getElementById('width'),hV=document.getElementById('hVal'),wV=document.getElementById('wVal'),cS=document.getElementById('complexity'),mS=document.getElementById('material'),cP=document.getElementById('calcPrice');
+function updateCalc(){const h=+hS.value,w=+wS.value,c=+cS.value,m=+mS.value;hV.textContent=h;wV.textContent=w;const vol=h*w*.5,price=Math.round(vol*m*c*3.2);cP.textContent='~ '+price.toLocaleString()+' ₽'}
+hS.addEventListener('input',updateCalc);wS.addEventListener('input',updateCalc);cS.addEventListener('change',updateCalc);mS.addEventListener('change',updateCalc);updateCalc();
+
+// portfolio 3d mouse effect
+document.querySelectorAll('.port-card').forEach(card=>{card.addEventListener('mousemove',e=>{const r=card.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,cx=r.width/2,cy=r.height/2,rotX=(y-cy)/cy*-15,rotY=(x-cx)/cx*15;card.querySelector('.port-card-inner').style.transform=`rotateX(${rotX}deg) rotateY(${rotY}deg)`})
+card.addEventListener('mouseleave',()=>{card.querySelector('.port-card-inner').style.transform='rotateY(10deg) rotateX(5deg)'})})
+
+// progress bar
+let progress=0;
+function animateProgress(){if(progress<100){progress+=Math.floor(Math.random()*8)+3;if(progress>100)progress=100;document.getElementById('progressFill').style.width=progress+'%';document.getElementById('progressLabel').textContent=progress+'%';setTimeout(animateProgress,2000)}}
+const progressObserver=new IntersectionObserver(([e])=>{if(e.isIntersecting&&progress===0){animateProgress();progressObserver.unobserve(e.target)}},{threshold:.3})
+progressObserver.observe(document.getElementById('how'))
+
+// testimonials carousel
+const testTrack=document.getElementById('testTrack'),testDots=document.getElementById('testDots');
+let testIdx=0,totalTests=document.querySelectorAll('.test-card').length,testTimer;
+for(let i=0;i<totalTests;i++){const d=document.createElement('button');d.addEventListener('click',()=>goTest(i));if(i===0)d.classList.add('active');testDots.appendChild(d)}
+function goTest(i){testIdx=i;testTrack.style.transform=`translateX(-${i*100}%)`;document.querySelectorAll('.test-dots button').forEach((d,j)=>d.classList.toggle('active',j===i))}
+function nextTest(){goTest((testIdx+1)%totalTests)}
+testTimer=setInterval(nextTest,5000);
+
+// faq
+function toggleFaq(el){const item=el.parentElement;item.classList.toggle('open')}
+
+// modal
+function openModal(){document.getElementById('modalOverlay').classList.add('active');document.body.style.overflow='hidden'}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');document.body.style.overflow=''}
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('modalOverlay'))closeModal()})
+
+// drop zone visual
+const dropZone=document.getElementById('dropZone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')})
+dropZone.addEventListener('dragleave',()=>{dropZone.classList.remove('dragover')})
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');dropZone.innerHTML='<div style="font-size:2rem;margin-bottom:.5rem">✓</div><p style="color:#92FE9D">Файл загружен!</p>'})
+dropZone.addEventListener('click',()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.stl,.obj,.3mf,.step';inp.click();inp.onchange=()=>{dropZone.innerHTML='<div style="font-size:2rem;margin-bottom:.5rem">✓</div><p style="color:#92FE9D">Файл загружен!</p>'}})
+
+// form
+function handleForm(e){e.preventDefault();const btn=e.target.querySelector('button[type="submit"]');btn.textContent='✓ Отправлено!';btn.style.pointerEvents='none';setTimeout(()=>{btn.textContent='Отправить';btn.style.pointerEvents=''},2000)}
+
+// counter
+let count=128;
+setInterval(()=>{count+=Math.floor(Math.random()*3)+1;document.getElementById('orderCounter').textContent=count},5000)
+
+// close modal on escape
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()})
+
+// smooth anchor scroll (polyfill for native smooth)
+document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const id=a.getAttribute('href');if(id==='#')return;const el=document.querySelector(id);if(el){e.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'})}})})
+</script>
+</body>
+</html>
